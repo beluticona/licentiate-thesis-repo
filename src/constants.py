@@ -9,9 +9,9 @@ STD_CV = 1
 LOO = 2
 
 # Solution volume
-SOLV_MODEL = 1
-SOLUD_MODEL = 2
-NO_MODEL = 0
+SOLUD_MODEL = 'solUD'
+PHYSICOCHEMICAL = 'feat'
+
 
 FEAT_VALUES_IMPORTANCE = 'feats_importance_values'
 FEAT_NAMES_IMPORTANCE = 'feats_names_by_importance'

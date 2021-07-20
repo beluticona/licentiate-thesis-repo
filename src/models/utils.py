@@ -69,6 +69,7 @@ def no_feat_scaling(model_parameters):
 def create_results_container():
     return result_container()
 
+
 def result_container():
     std_results = {
         'data_index': [],

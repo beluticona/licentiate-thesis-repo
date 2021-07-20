@@ -156,7 +156,7 @@ def execute_cross_validation(crystal_score, data, folds, pipeline, seed):
         'support_negative': make_scorer(utils.sup0),
         'support_positive': make_scorer(utils.sup1),
         'f1': 'f1'}
-    # shuffle batched experimental data into discrete experiments
+        
     scores = cross_validate(pipeline, data, crystal_score,
                             cv=KFold(folds, shuffle=True, random_state=seed),
                             scoring=scoring,

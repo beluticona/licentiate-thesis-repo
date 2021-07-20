@@ -3,7 +3,7 @@ from src.data import utils as data_utils
 from src.data import post_process
 from src.models import train
 from src.models import utils as model_utils
-from src.constants import SOLV_MODEL, SOLUD_MODEL, NO_MODEL
+from src.constants import SOLUD_MODEL, PHYSICOCHEMICAL
 import numpy as np
 import pandas as pd
 
@@ -34,7 +34,7 @@ def deep_shuffle(df):
     return shuffled_reactions
 
 
-def shuffle_dataset(df, data_preparation):
+def shuffle_dataset_if_required(df, data_preparation):
     # If it is desired to make a non sense dataset
     if data_preparation["shuffle_enabled"]:
         df = shuffle(df)
@@ -46,12 +46,12 @@ def shuffle_dataset(df, data_preparation):
 
 def process_dataset(df, parameters, full_results):
     # Binary class
-    crystal_score = df['_out_crystalscore']
-    crystal_score = (crystal_score == 4).astype(int)
-    df['_out_crystalscore'] = crystal_score
+    df['_out_crystalscore'] = (df['_out_crystalscore'] == 4).astype(int)
 
+    # TODO: Refactor
     # Select predictors combinations to run: RXN | CHEMICAL | union(RXN+CHEMICAL)  
-    selected_predictors_combinations = [predictors_combination for (predictors_combination, required) in parameters["dataset"].items() if required]
+    selected_predictors_combinations = [predictors_combination for (predictors_combination, required) 
+                                                        in parameters["dataset"].items() if required]
     
     if parameters['fixed-predictors']:
         selected_predictors_combinations = ['selected-predictors']
@@ -64,7 +64,7 @@ def process_dataset(df, parameters, full_results):
             selected_data = data_utils.filter_required_data(df, dataset_name)
 
         # Processing data
-        train.std_train_test(selected_data, parameters['model'], crystal_score, dataset_name, full_results, )
+        train.std_train_test(selected_data, parameters['model'], crystal_score, dataset_name, full_results)
         
         print('Complete: dataset '+ dataset_name + str(parameters['model']['sample_fraction']))
     

@@ -12,11 +12,10 @@ def read_data(data_path=training_dataset_path):
         
         df = pd.read_csv(data_path, header=0, dtype=dtypes)
 
-        data_utils.select_experiment_version_and_used_solvent(df)
+        if(data_path != training_dataset_path):
+            data_utils.select_experiment_version_and_used_solvent(df)
 
         df = df.fillna(0)
-
-        df['_raw_reagent_5_chemicals_2_actual_amount'] = [0] * df.shape[0]
 
         return df
 
@@ -44,6 +43,5 @@ def get_columns(total_columns):
         columns_by_prefix[prefix] = set(filter(lambda column_name: 
                                         column_name.startswith(prefix), 
                                         total_columns))
-    columns_by_prefix['solUD'] = set(data_utils.get_sol_ud_model_columns(total_columns))
     return columns_by_prefix
 

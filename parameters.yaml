@@ -24,25 +24,9 @@ model:
   one-hot-encoding: No # CAUTION DROPS _feats_ from dataframe leaves only encoding from organic inchikey
 
 dataset:
-    solV-chem: No
-    solV-exp: No
-    solV-reag: No
-    solV-only: No
-    solV-feat: No
-    solUD-prop: No
-    solUD-feat-chem:  No
-    solUD-exp-chem: No
-    solUD-feat-exp: No
-    solUD-exp: No
-    solUD-chem: No
-    solUD-reag: No
-    solUD-feat: Yes
     solUD-only: No
-    chem-only: No
-    reag-only: No
-    exp-only: No
     feat-only: No
-    solUD-feat-chem-exp: No
+    solUD-feat:  No
 
 runs: 10
 fixed-predictors: No
