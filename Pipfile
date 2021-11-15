@@ -13,6 +13,11 @@ sklearn = "*"
 seaborn = "*"
 plotly = "*"
 chart-studio = "*"
+umap = "*"
+rdkit-pypi = "*"
+jinja2 = "*"
+imbalanced-learn = "*"
+adjusttext = "*"
 
 [dev-packages]
 rope = "*"
