@@ -18,9 +18,11 @@ rdkit-pypi = "*"
 jinja2 = "*"
 imbalanced-learn = "*"
 adjusttext = "*"
+nbformat = "*"
+jupyter = "*"
 
 [dev-packages]
 rope = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7.4"

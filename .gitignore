@@ -5,3 +5,10 @@
 *__pycache__/
 /results
 .Rproj.user
+Rhistory
+.python-version
+.vscode/
+build/
+hcpc-test.r
+licentiate-thesis-repo.Rproj
+.Rhistory
