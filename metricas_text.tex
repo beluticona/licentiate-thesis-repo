@@ -1,0 +1,280 @@
+A la hora de desarrollar modelos de aprendizaje automático, es muy importante reflexionar acerca de qué métricas se usan en la evaluación de su performance y a qué responde su variabilidad. En este capítulo se realiza un análisis sobre cómo las características del \textit{corpus} utilizado impactan en las métricas usadas en este trabajo.
+
+\subsection{Métrica de base}
+
+Si bien en términos generales la tarea del modelo a realizar consiste en una \textit{clasificación binaria de las condiciones experimentales de una síntesis química}, entender cómo se usará en el dominio del problema es clave para determinar qué métrica de base utilizar.
+
+En primer lugar, consideremos que la síntesis de perovskita en forma de monocristales es un proceso químico complejo que \textit{difícilmente} ocurre. Dicho en otras palabras, son muy limitadas las condiciones en donde realmente se produce la cristalización, en comparación con el amplio espectro posible de experimentaciones en el que no cristaliza. Esta consideración tiene un impacto en el desarrollo de los modelos, dado que para un grupo de investigación en nanomateriales no será lo mismo etiquetar correctamente que la síntesis generará monocristales, que etiquetar que no lo hará. Al saber que es muy probable que no cristalice, que un modelo prediga la etiqueta positiva correctamente tiene mucho más valor informativo que uno que prediga la etiqueta negativa adecuadamente. El aporte de esta clase de modelos es más relevante cuando puede predecir la efectiva cristalización, ya que \textit{por default} se espera que no suceda.
+
+Por lo tanto, debido a que en el marco de la ciencia de las materiales es de especial interés poder \textit{capturar} la mayor proporción posible de verdaderos positivos, se decidió usar el \textit{recall} de la clase minoritaria como métrica de base. De esta forma, de trabaja a costas de cometer un error tipo 1 (afirmar que cristaliza frente a condiciones reales donde no lo hace) con el fin de priorizar que el modelo \textit{aprenda} de la acotada cantidad de datos positivos, minimizando el error tipo 2 (afirmar que no cristaliza cuando verdaderamente lo hace).
+
+\subsection{El origen de los errores de un modelo}
+
+Al aplicar métricas para comparar distintos modelos entre sí, se busca seleccionar aquel que obtenga la mejor performance, es decir, aquel que optimice las métricas. Al estar usando aquellas basadas en la matriz de confusión, se está buscando en otras palabras minimizar las confusiones del modelo, es decir, minimizar el \textit{error} del etiquetado.
+Ahora bien, para entender cuáles son los errores que comete un modelo es necesario definir qué se entiende por modelo. En este trabajo se considera que un \textit{modelo} de aprendizaje automático $\mathscr{M}$ viene dado por un conjunto de datos y un pipeline:
+
+\bigskip
+\centerline{$\mathscr{M} \sim \mathscr{M}(datos, pipeline)$}
+\bigskip
+
+
+Desde esta abstracción, en primer lugar al desarrollar un modelo se considera un \textit{corpus} que trae consigo un error relacionado a la naturaleza de los datos. Se toma un lote de entrenamiento a ser transformado mediante un pipeline de procesamiento, a través del cual se preparan los datos a ser luego usados como entrada de algún algoritmo de aprendizaje automático en particular. 
+
+A continuación se realiza un análisis de las distintas fuentes de error que puede tener un modelo en pos de comprender a qué se debe la variabilidad de las métricas. El propósito consiste en entender hasta qué punto, mejorar la performance de una métrica consiste en el desarrollo de un \textit{mejor} pipeline (ya sea con otras técnicas de preprocesamiento, algoritmos, etc), o bien se encuentra limitado por las características de la naturaleza del conjunto de datos utilizado.
+
+\subsubsection{Error de los Datos} \label{ruido_datos}
+
+%\todo[inline]{Revisar si se menciono que estos errores experimentales/humano, afectan agregando ruido y dificultando la tarea de los algoritmos a la hora de generalizar/encontrar patrones}
+
+%Al estar trabajando con un \textit{corpus} cuyos datos tienen un origen experimental, es importante considerar la posible influencia que tengan los errores de los datos en la performance del modelo en sí.
+
+%Para entender a qué responda la variabilidad de la métrica, es un punto clave dado que . Sería deseable poder entender hasta qué punto dicha variabilidad responde a errores de los datos en sí, o a las características del modelo desarrollado (técnicas de preprocesamiento, algoritmos propuestos, entre otros).
+
+%al tratarse el dominio del problema de una ciencia experimental, los datos a usar traen consigo una carga de sesgos y errores experimentales.
+% suena más a conclusión: 
+% Sobretodo considerando que en parte la variabilidad de la métrica se debe a la calidad de los datos a usar.
+% siento que para esta última frase debería definir calidad de datos..
+
+Por un lado, al provenir el \textit{corpus} de resultados experimentales de un laboratorio, hay una inherente fuente de error proveniente del dispositivo de experimentación que los produjo. Si bien es cierto que para este corpus se empleó un mecanismo automatizado por robótica que ayuda a poder minimizarlo, no se descarta un posible sesgo sistemático o una inapropiada configuración del dispositivo, así como también una inadecuada manipulación humana.
+
+Por otro lado, otra posible fuente de error proviene del diseño experimental en sí, pudiendo por ejemplo verse plasmado en un posible error de muestreo. Dado que por cada organoamina, existe un espacio de concentraciones con una distribución particular que dependen de la naturaleza química de esa organoamina, es importante analizar cuán bien la muestra tomada representa dicho espacio. Por ejemplo, podría ser que para una organoamina muy rara vez cristalice el producto pero que los datos tomados provengan de un subespacio particular donde sí cristaliza \textit{significativamente}. Esto podría llevar a que un modelo entrenado en este conjunto de datos \textit{aprenda} que esta clase de organoaminas es propensa a favorecer la cristalización, llevando a conclusiones potencialmente erróneas. De forma análoga, podría darse el caso contrario donde en base a los datos disponibles una organoamina pareciera desfavorecer la cristalización, aunque en verdad se trate de un error de muestreo.
+
+Todas estas fuentes de error, vinculadas a la obtención y recolección de los datos crudos, afectan al modelo por el agregado de ruido que producen, dificultando la tarea de los algoritmos a la hora de detectar patrones o realizar generalizaciones.  
+
+%Habiendo considerado el contexto de uso de los modelos y las fuente de error inherentes a los datos,
+%Además de considerar las fuentes de error inherentes a los datos usados y cómo el dominio del problema influye en la determinación de las métricas, es fundamental considerar también el contexto de uso de los modelos. 
+
+%Por las características del corpus a usar en este trabajo, a la hora de evaluar los modelos en estas tareas utilizaremos conjuntos de datos de validación y testeo desbalanceados y de tamaño acotado (\~100 datos). Si queremos poder usar un métrica que nos permita comparar qué modelos se ajustan mejor a la tarea a realizar, resulta importante poder saber cómo estas características pueden afectar las consecuentes conclusiones del trabajo. De allí la motivación de hacer un estudio sobre el impacto que pueden tener los errores experimentales y del modelo en los resultados de su performance.
+
+
+\subsubsection{Error del Pipeline}
+
+Al desarrollar modelos de aprendizaje automático, no solo es relevante las características del corpus de datos a utilizar, sino también todo el preprocesamiento a aplicar a los datos hasta producirse las predicciones, es decir, el pipeline de trabajo.
+
+\todo[inline]{tal vez convenga a la par definir el pipeline}
+\todo[inline]{desarrollar más por ej el impacto de la generacion de datos por smote por ej}
+
+La etapa de aplicación de transformaciones trae consigo su propio error a ser reflejado en los resultados finales. Por ejemplo, al usarse técnicas de muestreo que generan datos sintéticos en pos de balancear las clases, puede que se generen datos que químicamente sean lejanos a la realidad. De manera análoga, al hacer una selección de atributos se está dejando al margen ciertos aspectos de las condiciones experimentales, así como también propiedades físico-químicas que ayudan a caracterizar con mayor precisión a la organoamina considerada. De allí que cada etapa del procesamiento de los datos crudos tenga que tener una justificación metodológica mediada por un criterio químico.
+
+Por otro lado, otro aspecto a considerar es qué tan bien se puede generalizar la distinción entre clases usando algún algoritmo en particular. Esto está relacionado con qué distribución toman los datos y qué técnicas de \textit{corte} usen los algoritmos de clasificación en particular (por ejemplo, al usarse planos de corte en SVM, se supone que existen planos lo suficientemente buenos usando los atributos disponibles como para diferenciar las clases). 
+
+\todo[inline]{agregar sobre cluster tmb para dar otro ej?}
+\todo[inline]{falta un cierre de conclusion o una línea más general}
+
+\subsection{Modelado de Errores}
+\todo[inline]{conectar del desarrollo teorico del origen de los errores...a qué se puede modelar, qué se modelan con las <fluctuaciones>}
+
+\todo[inline]{revisar si el nombre <fluctuacion> está bien, la otra es cambios de etiqueta}
+
+\todo[inline]{formalizar la simulación retomando la teoría}
+
+Con el objetivo de comprender cómo los errores de distinto origen afectan la medición de las métricas, se procedió a realizar una simulación de la variabilidad consecuente que pueden sufrir las matrices de confusión. 
+
+%TODO: más adelante
+%Principalmente, el objetivo es poder ganar una intuición de cómo características del conjunto de datos, como el tamaño y el coeficiente de desbalance, impactan en las métricas finales.
+
+% Recordemos que en este trabajo estas se usarán para poder evaluar los modelos resultantes en un conjunto de datos de evaluación (no utilizados para el entrenamiento ni el ajuste de hiperparámetros). 
+
+Para poder estudiar la variabilidad de una matriz, se considera su definición dada por $CM(\lambda_{N,N}, \lambda_{P,P}, \pi_{P}, m)$, donde tanto $m$ como $\pi_{P}$ caracterizan el conjunto de evaluación a ser usado, mientras que $\lambda_{N,N}$ y $\lambda_{P,P}$ refieren a la performance del modelo evaluado:
+
+\begin{itemize}
+    \item $m$ tamaño del conjunto de validación
+    \item $\pi_{P}$ proporción de positivos 
+    \item $\lambda_{N,N}$ proporción de verdaderos negativos
+    \item $\lambda_{P,P}$ proporción de verdaderos positivos
+\end{itemize}
+
+Sea $\mathcal{M}$ un modelo genérico de clasificación de condiciones de síntesis de perovskita, el cual es entrenado en un conjunto de datos y con un pipeline en particular. Sea $d$ un conjunto de datos de evaluación de $\mathcal{M}$, cuyas instancias son observacionalmente fieles al mundo real dado que su recolección se dio en ausencia de ruido (véase \ref{ruido_datos}). Al evaluarse $\mathcal{M}$ en $d$ se obtiene lo que denominamos una matriz de confusión fidedigna de  $\mathcal{M}$ en $d$, $CM_f(\mathcal{M}, d)$, la cual se caracteriza por reflejar la performance real de un modelo dado sobre un conjunto de datos de evaluación sin ruido o error alguno\footnote{Nótese que el subíndice $f$ de la notación $CM_{f}$ se usa solo para resaltar que se emplea un conjunto de datos de evaluación fiel observacionalmente al mundo real. No hay diferencias entre $CM_{f}$ y $CM$ por definición, sino que se trata de una característica en especial considerada.}. 
+
+\iffalse 
+\[
+CM \equiv 
+\begin{bmatrix}
+\lambda_{N,N} (n-n\pi_{P}) & (1-\lambda_{N,N}) (n-n\pi_{P}) \\
+(1-\lambda_{P,P}) n\pi_{P}   & \lambda_{P,P} n\pi_{P} 
+\end{bmatrix}
+\]
+\fi 
+
+
+%Consideremos los dos ejes de una matriz de confusión: el observacional y el eje de predicción correspondientes a las etiquetas del conjunto de evaluación y a las estimadas por el modelo, respectivamente. 
+
+Sea $d_{e}$ un conjunto de datos recolectados del mundo real propensos a tener errores, cuyas instancias de las variables predictoras coinciden con las de $d$ (no así necesariamente las de la variable respuesta). Supongamos que sus variables predictoras tienen un ruido despreciable o no significativo pero que la variable respuesta sí presenta un ruido considerable que afecta las etiquetas observacionales asignadas. Esto significa que existe cierta probabilidad de que las instancias de este conjunto tengan asignada una clase observacional incorrecta. Decimos entonces que dichos conjuntos se diferencian únicamente por la variable respuesta: las etiquetas asignadas en $d_{e}$ pueden potencialmente ser incorrectas, mientras que las de $d$ sí son observaciones fieles al mundo real.
+
+\todo[inline]{considerar formalizar esto con un etiqueta hat y etiqueta, y una similar/aproximado}
+
+Al evaluar el modelo genérico $\mathcal{M}$ en este conjunto con ruido $d_{e}$, la matriz de confusión resultante dista de $CM_f(\mathcal{M}, d)$ de la siguiente forma: %en el eje observacional debido a que potencialmente las muestras podrían estar mal etiquetadas. 
+%Notemos que el eje de predicción no se vería afectado dado que no hay cambios en el modelo en sí, haría exactamente la misma estimación de etiqueta para la misma muestra de evaluación.
+
+
+\[
+CM(\mathcal{M}, d) \equiv 
+CM_{f}(\mathcal{M}, d) \equiv 
+\begin{bmatrix}
+tn_{d} & fp_{d} \\
+fn_{d} & tp_{d}
+\end{bmatrix}
+\]
+
+
+\[
+CM(\mathcal{M}, d_{e}) \equiv 
+\begin{bmatrix}
+tn_{e} & fp_{e}\\
+fn_{e} & tp_{e}
+\end{bmatrix}
+\equiv 
+\begin{bmatrix}
+tn_{d}  + \epsilon_{N,N} & fp_{d} + \epsilon_{N,P} \\
+fn_{d} + \epsilon_{P,N} & tp_{d} + \epsilon_{P,P}
+\end{bmatrix}
+\]
+con:
+\begin{gather*}
+\epsilon_{N,P} + \epsilon_{P,P} = 0 \\
+\epsilon_{N,N} + \epsilon_{P,N} = 0
+\end{gather*}
+
+
+%\todo[inline]{a pasar como img}
+\iffalse
+\[
+\begin{array}{ccc}
+& & \\
+& \text{eje de predicción} &  \\
+&
+   \begin{bmatrix}
+    \lambda_{N,N} (n-n\pi_{P})  + \epsilon_{N,N} & (1-\lambda_{N,N}) (n-n\pi_{P}) + \epsilon_{N,P} \\
+    (1-\lambda_{P,P}) n\pi_{P} + \epsilon_{P,N} & \lambda_{P,P} n\pi_{P} + \epsilon_{P,P}
+    \end{bmatrix}
+    
+& \text{eje observacional}
+\end{array}
+\]
+\fi
+
+\iffalse
+\[
+\begin{array}{ccc}
+& & \\
+& \text{eje de predicción} &  \\
+&
+   \begin{bmatrix}
+    \lambda_{N,N} (n-n\pi_{P})  + \epsilon_{N,N} & (1-\lambda_{N,N}) (n-n\pi_{P}) + \epsilon_{N,P} \\
+    (1-\lambda_{P,P}) n\pi_{P} + \epsilon_{P,N} & \lambda_{P,P} n\pi_{P} + \epsilon_{P,P}
+    \end{bmatrix}
+    
+& \text{eje observacional}
+\end{array}
+\]
+con:
+\begin{gather*}
+\epsilon_{N,P} + \epsilon_{P,P} = 0 \\
+\epsilon_{N,N} + \epsilon_{P,N} = 0
+\end{gather*}
+\fi
+
+La diferencia entre estas matrices se pueden interpretar como un cambio de etiqueta en el eje observacional, en donde por ejemplo, la cantidad que aumenta/disminuye los $TP$ es la misma que disminuye/aumenta los $FP$ (de la misma forma vale para $TN$ y $FN$). Véamoslo con un ejemplo concreto:
+
+\[
+CM_f(\mathcal{M}, d) \equiv 
+\begin{bmatrix}
+91 & 8\\
+7 & 23
+\end{bmatrix}
+\]
+
+Supongamos hubiesen dos instancias en $d$ etiquetadas como positivas las cuales fueron etiquetadas en $d_{e}$ como negativas\footnote{podría deberse por ejemplo a un error en la determinación de presencia de cristales por un método cristalográfico \todo[inline]{definir, e.g imágenes, nombrar algún dispositivo/mecanismo, cristalografía?}}. Dado que el entrenamiento del modelo es el mismo y solo cambia el conjunto de evaluación, la matriz de confusión resultante queda dada por:
+
+\[
+CM_f(\mathcal{M}, d_{e}) \equiv 
+\begin{bmatrix}
+91 & 8 \textcolor{blue}{ + 2} \\
+7 & 23 \textcolor{red}{ - 2} 
+\end{bmatrix}
+\]
+
+Hasta ahora hemos considerado la variabilidad de las matrices debido al potencial ruido en los datos de evaluación. 
+De la misma forma, se pueden considerar el error dado por la.
+
+
+
+Se pueden identificar dos casos de fluctuaciones concretas según qué eje matricial se considere:
+
+\begin{itemize}
+    \item Fluctuación de predicción: una muestra de etiqueta observacional correcta cuya clase estimada es incorrecta, se trata de un error a nivel \textit{modelo}.
+    \item Fluctuación observacional: una muestra de etiqueta observacional incorrecta cuya clase estimada es verdaderamente correcta, se trata de un error de los \textit{datos}.
+\end{itemize}
+
+\[
+\begin{array}{ccc}
+& & \\
+& \text{eje de predicción} &  \\
+&
+   \begin{bmatrix}
+    \lambda_{N,N} m_{N}& \lambda_{N,P} m_{N}\\
+    \lambda_{P,N} m_{P}  & \lambda_{P,P} m_{P} 
+    \end{bmatrix} & \text{eje observacional}
+\end{array}
+\]
+- objetivo de experimentación (aclaración de pablo que es a <<ojo>> a retomar al final) \newline
+- evaluación de un modelo por matrices de confusión \newline
+    - modelo genérico (error asociado a nivel modelo ) \newline
+    - conjunto de evaluación (error asociado nivel experimentación) \newline
+- diagrama de matriz de confusión
+
+\subsubsection{Metodología}
+\todo[inline]{Todo lo que viene a continuación hay que reordenarlo}
+
+El objetivo de esta experimentación es conocer cómo la medición de la performance de un modelo genérico de clasificación binaria, se ve afectada tanto por la cantidad como por el desbalance de clases en el conjunto de datos de evaluación \footnote{Según corresponda, se pueden tratar de datos de validación como de \textit{testing}, véase notación usada en el \textit{pipeline}}. Para esto se trabajó con matrices de confusión sintetizadas, de modo tal que simularan la variabilidad de resultados a obtener, reflejándose así el efecto proveniente de las distintas fuentes de errores. 
+
+\subsubsection{Generación de matrices de confusión: simulación de errores}
+
+Para la generación de matrices, definimos un conjunto de casos de interés en base a la proporción de TP y el desbalance de clase (medido por $T_{prop}$). Notemos que dado el tamaño de un conjunto de evaluación  $n$, cualquier matriz asociada queda definida por las proporciones de positivos, verdaderos positivos y falsos negativos. En particular, como nos interesa discernir cuándo se tiene una \textit{buena}/\textit{mala} predicción de la etiqueta positiva, consideramos como casos de interés de estudio los distintos cuartiles de TP: $Q_{i}, i \in {1,2,3}$. Además, exploramos el desbalance en casos fuertemente diferenciados, tomando $T_{prop}$ como el 10\% y 40\%, siendo un alto y bajo desbalance respectivamente. Para facilidad de la experimentación, se mantuvo fijo el $FN$ en 0.8 \footnote{Recordemos que en los supuestos mencionados, cometer un error tipo 2 está contemplado como un error menor.}
+
+De esta forma en base estos parámetros se pueden definir un conjunto de matrices semillas que vienen a representar la performance de un modelo a la hora de ser evaluado sobre una muestra estadística \textit{real}. Decimos que se trata de una muestra \textit{real} puesto que suponemos que es reflejo de la distribución de las condiciones reales de cristalización. Por lo tanto, suponemos que no contiene errores experimentales, es decir, debidos a la manipulación humana de los reactivos, al dispositivo experimental usado en la reacción y en la caracterización de los cristales, entre otros.
+
+Ahora bien, para poder simular estos errores experimentales provenientes de los datos en sí, decidimos modificar la etiqueta de cierta proporción de los datos de evaluación dejándolos al azar. Es decir, realizamos el cambio de la etiqueta observacional para estas muestras: si era positiva se marcó como negativa y viceversa. A nivel implementación, dado que trabajamos con las matrices de confusión directamente sin generar datos de evaluación sintéticos, esta simulación se reflejó mediante la operación \texttt{cambiar\_etiqueta} en una clase del eje observacional. En otras palabras, se tomó aleatoriamente una clase (positiva o negativa) del eje y se sumó/restó una unidad según correspondiese. De esta forma, la simulación de los errores experimentales queda representada por una serie de cambio de etiquetas en el eje observacional.
+
+Por otro lado, además de poder simular los errores de experimentación, se simularon aquellos provenientes del modelo entrenado. Notemos que este comprende tanto los errores causados por la naturaleza de los datos de entrenamiento como aquellos relacionados a la capacidad del algoritmo de clasificación usado para el espacio de los datos. Se realizó un procedimiento análogo al anterior, trabajando con la operación \texttt{cambiar\_etiqueta} aplicándola esta vez al eje de predicción de una matriz. 
+
+\todo[inline]{Agregar figura de matriz con ejes nomenclados}
+
+\todo[inline]{sacar alpha, agregar p}
+\begin{minted}[escapeinside=||,mathescape=true]{python}
+Generar-Matrices-Confusión-AEstudiar (tipo_de_error, m, n, params)
+    Inicializar S como conjunto vacío de matrices a estudiar
+    Generar todas las matrices semillas de interés a estudiar de tamaño |$n$| 
+    en base a los parámetros |$params$|: |$TP$|, |$P_{prop}$| y |$TN$|
+    #generar m variantes según el tipo_de_error (experimental | modelo | ambas)
+    Por cada matriz semilla| $ms$| repetir |$m$| veces:
+        Crear una copia |$c$| de la matriz semilla |$ms$|
+        Si el tipo de error es experimental:
+            Actualizar |$c$| aplicando  |$m*p$| operaciones cambiar_etiqueta en 
+            el eje observacional
+        Si el tipo de error es de modelo:
+            Actualizar |$c$| aplicando |$m*p$| operaciones cambiar_etiqueta en el
+            eje de predicción
+        De lo contrario es error mixto:
+            En base a |$alpha$| actualizar |$c$| aplicando |$m*p*alpha$| operaciones
+            cambiar_etiqueta en el eje observacional y el resto en 
+            el eje de predicción
+        Agregar |$c$| a S de matrices de estudio
+        
+Cambiar-Etiqueta(eje_de_cambio, matriz)
+    Elegir aleatoriamente una posición |$p$| en el eje_de_cambio (notar que 
+    |$p$| es una fila o una columna)
+    Elegir aleatoriamente un sentido de etiqueta |$s$| en la posición |$p$| 
+    (positivo a negativo o viceversa) 
+    Efectuar cambio de etiqueta en sentido |$s$|, de no ser posible intentar en 
+    el sentido inverso |$-s$|
+\end{minted}
+
+\subsection{Experimentación}
+
+\subsubsection{Influencia de desbalance}
+La primera experimentación consistió en estudiar cómo el desbalance del conjunto de datos de evaluación influye en la variabilidad de los resultados arrojados por distintas posibles métricas para las mismas matrices de confusión. 
+Para este se consideraron las tradicionales métricas utilizadas en la evaluación de modelos (precision, recall, F1, accuracy), además de la métrica \textit{baseline} que fue utilizada por el trabajo de referencia: matthew. Para la generación de las matrices se siguió el procedimiento previamente detallado, empleando un balanceo del 10\% y 40\% de $T_{prop}$, explorando la distribución para los tres cuartiles de $TN$.
+
+
+
