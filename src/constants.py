@@ -19,12 +19,24 @@ FEAT_NAMES_IMPORTANCE = 'feats_names_by_importance'
 # Data pre-process
 experiment_version = 1.1
 
-GBL_inchi_key = 'YEJRWHAVMIAJKC-UHFFFAOYSA-N'
+GBL_INCHI_KEY = 'YEJRWHAVMIAJKC-UHFFFAOYSA-N'
+DMSO_INCHI_KEY = 'IAZDPXIOMUYVGZ-UHFFFAOYSA-N'
+DMF_INCHI_KEY ='ZMXDDKWLCZADIW-UHFFFAOYSA-N'
 
 dimethyl_ammonium_inchi_key = 'MXLWMIFDJCGBV-UHFFFAOYSA-N'
 
+RXN_FEAT_NAME = {
+    '_rxn_M_inorganic': "reactivo inorgánico",
+    '_rxn_M_organic': "reactivo orgánico",
+    '_rxn_M_acid': "ácido",
+    }
+
+TARGET_COL = '_out_crystalscore'
+
+ORGANOAMONIUM_INCHI_KEY_COL = '_rxn_organic-inchikey'
+
 # Dictionary from inchi key to its chemical name
-INCHI_TO_CHEMNAME = {'null': 'null',
+INCHI_TO_CHEMNAME = {0: '0',
                      'YEJRWHAVMIAJKC-UHFFFAOYSA-N': 'Gamma-Butyrolactone',
                      'IAZDPXIOMUYVGZ-UHFFFAOYSA-N': 'Dimethyl sulfoxide',
                      'BDAGIHXWWSANSR-UHFFFAOYSA-N': 'Formic Acid',

@@ -1,9 +1,10 @@
-from src.config import training_dataset_path, data_types_path, chemical_inventory_path, raw_data_path
+from src.config import full_chem_feat_path, data_types_path, chemical_inventory_path, raw_data_path
 import src.data.utils as data_utils 
+from src.constants import GBL_INCHI_KEY, DMSO_INCHI_KEY, DMF_INCHI_KEY, INCHI_TO_CHEMNAME, RXN_FEAT_NAME, TARGET_COL
 import pandas as pd
 import json
 import yaml as yl
-
+import itertools
 
 rings_feat = ['_feat_CyclomaticNumber',
  '_feat_CarboaromaticRingCount',
@@ -20,39 +21,96 @@ continous_feat = ['_feat_molsurfaceareaVDWp', '_feat_maximalprojectionsize', '_f
 rxn_feat = ["_rxn_M_acid", "_rxn_M_organic", "_rxn_M_inorganic"] 
 target = ["_out_crystalscore"]
 
+organoammonium_info = [
+    'Chemical Name', 
+    'Chemical Abbreviation', 
+    'Molecular Weight (g/mol)',
+    'Density            (g/mL)', 
+    'InChI=',
+    'InChI Key (ID)',
+    'Chemical Category',
+    'Canonical SMILES String',
+    'Molecular Formula'
+]
 
-def read_data(data_path=training_dataset_path, organic_key=False):
-    """To Read different type of data."""
-    with open(data_types_path) as json_file:
 
-        dtypes = json.load(json_file)
+def read_data(data_path, solvent=GBL_INCHI_KEY, organic_key=False, 
+              binary_cristal_score=True, filter_rxn_feat=True):
+    """ To Read different type of data."""
+    #with open(data_types_path) as json_file:
 
-        df = pd.read_csv(data_path, header=0, dtype=dtypes)
+     #   dtypes = json.load(json_file)
 
-        if(data_path == raw_data_path):
-            data_utils.select_experiment_version_and_used_solvent(df)
+    df = pd.read_csv(data_path, header=0, low_memory=False)
 
-        df = df.fillna(0)
+    data_utils.select_experiment_version(df)
+    
+    if solvent:
+        df.query('_raw_reagent_0_chemicals_0_InChIKey == @solvent', inplace=True)
+    else:
+        df = df[df['_raw_reagent_0_chemicals_0_InChIKey'].isin([GBL_INCHI_KEY, DMSO_INCHI_KEY, DMF_INCHI_KEY])]
+    
+    df = df.fillna(0)
 
-        chemical_info = read_chemical_info()
+    chemical_info = read_chemical_info()
 
-        chemical_info[['Chemical Abbreviation', 'InChI Key (ID)']].dropna()
-        df = df.set_index('_rxn_organic-inchikey').join(chemical_info.set_index('InChI Key (ID)'), 
-                                                        how='inner').reset_index().rename({'index': '_rxn_organic-inchikey'}, 
-                                                        axis='columns')
-        selected_columns = rings_feat+columns_arbitrary_decision+continous_feat+rxn_feat+target+['Chemical Abbreviation']
-        if(organic_key): 
-            selected_columns += ["_rxn_organic-inchikey"]
-        df = df[set(selected_columns)]
-        df['_out_crystalscore'] = (df['_out_crystalscore'] == 4).astype(int)
+    chemical_info[['Chemical Abbreviation', 'InChI Key (ID)']].dropna()
+    df = df.set_index('_rxn_organic-inchikey').join(chemical_info.set_index('InChI Key (ID)'), 
+                                                    how='inner').reset_index().rename({'index': '_rxn_organic-inchikey'}, 
+                                                    axis='columns')
+    #selected_columns = rings_feat+columns_arbitrary_decision+continous_feat+rxn_feat+target+['Chemical Abbreviation']
+     
+    selected_columns = get_deafult_model_columns() + ["_rxn_organic-inchikey"]
+
+    if not organic_key: 
+        df.drop(["_rxn_organic-inchikey"], axis=1, inplace=True)
+        selected_columns.remove("_rxn_organic-inchikey")
         
+    df = df.query("_out_crystalscore > 0")
+    
+    if binary_cristal_score:
+        df = binarization(df)
+        
+    return df[selected_columns]
+
+def read_multisolvent_data():
+    
+    solvents_inchies = [GBL_INCHI_KEY, DMSO_INCHI_KEY, DMF_INCHI_KEY]
+    solvents = [INCHI_TO_CHEMNAME[inchie] for inchie in solvents_inchies]
+
+    plot_solvents = {'Gamma-Butyrolactone': "GBL",
+                     'Dimethyl sulfoxide':"DMSO",
+                     'Dimethylformamide': "DMF"}
+
+    solvents_data = {INCHI_TO_CHEMNAME[solvent_inchie]: utils.read_data(raw_data_path, organic_key=True,\
+                                                                        solvent=solvent_inchie) \
+                     for solvent_inchie in solvents_inchies}
+    
+    def add_column(df, solvent):
+        df['solvent'] = solvent
         return df
 
+    df_full_with_solvent = pd.concat([data.apply(add_column, axis=1, args=(solvent,)) \
+                                 for solvent, data in solvents_data.items()], axis=0)\
+                                .reset_index(drop=True)
+    return df_full_with_solvent
 
-def read_chemical_info():
+
+def binarization(df, soft=False, col=TARGET_COL):
+    if soft:
+        df.loc[:,col] = (df[TARGET_COL] > 2).astype(int)
+    else:
+        df.loc[:,col] = (df[TARGET_COL] == 4).astype(int)
+    return df
+
+
+def read_chemical_info(filtered_cols=True):
     """Read information about chemical compounds used as organoammonium."""
     with open(chemical_inventory_path) as file:
         chemical_inventory = pd.read_csv(file, header=0)
+        if filtered_cols:
+            chemical_inventory = chemical_inventory[organoammonium_info]
+        chemical_inventory = chemical_inventory.drop_duplicates().dropna()
         return chemical_inventory
 
 
@@ -63,8 +121,7 @@ def filter_columns_by_prefix(columns, prefixes):
                         for prefix in prefixes)}
     return filtered_columns
 
-
-def get_columns(total_columns):
+def get_columns(total_columns, as_list=True):
     """Get all used columns: Reaction condition and physicochemical features."""
     prefixs = ['_rxn_', '_feat_']
     columns_by_prefix = {}
@@ -72,5 +129,22 @@ def get_columns(total_columns):
         columns_by_prefix[prefix] = set(filter(lambda column_name: 
                                         column_name.startswith(prefix), 
                                         total_columns))
-    return columns_by_prefix
+    key_list = [list(key_val) for key_val in columns_by_prefix.values()]
+    columns_list = list(itertools.chain(*key_list))
 
+    return columns_list if as_list else columns_by_prefix
+
+
+def concentration_feats():
+    return list(RXN_FEAT_NAME.keys())  
+
+def chem_feats():
+    with open(full_chem_feat_path, 'r') as file:
+        data = json.load(file)
+        feat_ls = json.loads(data)
+    return feat_ls
+    
+def get_deafult_model_columns():
+    concentration_cols = concentration_feats()
+    feats_cols = chem_feats()
+    return feats_cols + concentration_cols +[TARGET_COL]
