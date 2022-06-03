@@ -1,6 +1,6 @@
 from src.config import full_chem_feat_path, data_types_path, chemical_inventory_path, raw_data_path
 import src.data.utils as data_utils 
-from src.constants import GBL_INCHI_KEY, DMSO_INCHI_KEY, DMF_INCHI_KEY, INCHI_TO_CHEMNAME, RXN_FEAT_NAME, TARGET_COL
+from src.constants import GBL_INCHI_KEY, DMSO_INCHI_KEY, DMF_INCHI_KEY, INCHI_TO_CHEMNAME, RXN_FEAT_NAME, TARGET_COL, ORGANOAMONIUM_INCHI_KEY_COL
 import pandas as pd
 import json
 import yaml as yl
@@ -72,6 +72,19 @@ def read_data(data_path, solvent=GBL_INCHI_KEY, organic_key=False,
         df = binarization(df)
         
     return df[selected_columns]
+
+def get_organoamines():
+    df_amines_feats = pd.read_csv("data/metadata/type_var_fq_bins.csv")
+    
+    df = read_data(raw_data_path, organic_key=True, solvent=None)[[ORGANOAMONIUM_INCHI_KEY_COL]].drop_duplicates()
+    chemical_info = read_chemical_info()
+
+    chemical_info[['Chemical Abbreviation', 'InChI Key (ID)']].dropna()
+    df = df.set_index(ORGANOAMONIUM_INCHI_KEY_COL).join(chemical_info.set_index('InChI Key (ID)'), 
+                                                    how='inner').reset_index().rename({'index': ORGANOAMONIUM_INCHI_KEY_COL}, 
+                                                    axis='columns')
+    return df
+    
 
 def read_multisolvent_data():
     
