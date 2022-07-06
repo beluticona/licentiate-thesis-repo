@@ -3,7 +3,7 @@ library(gt)
 library(dplyr)
 
 general_quantity = tibble(
-  tipo = c("Primaria", "Secundaria", "Terciaria", "Cuaternariaa"),
+  tipo = c("Primaria", "Secundaria", "Terciaria", "Cuaternaria"),
   experimentos = c(6096, 864, 1096),
   organoaminas = c(29, 6, 9)
 )
@@ -11,8 +11,9 @@ general_quantity = tibble(
 cantidad_datos_por_solvente <- function(){
   general_quantity = tibble(
     solvente = c("GBL", "DMSO", "DMF"),
-    experimentos = c(6096, 864, 1096),
-    organoaminas = c(29, 6, 9)
+    organoaminas = c(29, 6, 9),
+    experimentos = c(6096, 864, 1096)
+    
   )
   general_quantity <- general_quantity %>% mutate(porcentaje = experimentos/sum(experimentos)*100)
   
@@ -24,16 +25,18 @@ cantidad_datos_por_solvente <- function(){
     #) %>% 
     cols_label(
       solvente = "Solvente",
-      experimentos = "experimentos",
-      organoaminas = "organoaminas",
-      porcentaje = "%",
+      organoaminas = "#organoaminas",
+      experimentos = "cantidad",
+      porcentaje = "porcentaje (%)",
+
+      
     ) %>%
     tab_stubhead(
       label = "Solvente" 
     ) %>%
     tab_spanner(
-      label = "Cantidad de",
-      columns = c(organoaminas, experimentos, porcentaje),
+      label = "experimentos",
+      columns = c(experimentos, porcentaje)
     ) %>%
     grand_summary_rows (
       columns = "experimentos",
@@ -59,7 +62,7 @@ cantidad_datos_por_solvente <- function(){
       decimals = 1
     ) %>%
     
-    gtsave("cant_datos_por_amina_sv.pdf")
+    gtsave("cant_datos_por_amina_sv.png")
 }
 cantidad_datos_por_solvente()
 
@@ -144,8 +147,10 @@ tipo_var <- function(){
 }
 
 
-features_fq <- read.csv(file = '../../data/metadata/describe_feat_fq_description.csv')
+features_fq <- read.csv(file = '../../data/metadata/FQ_features_summary_table.csv')
 
+
+features_fq = within(features_fq, rm(Feature)) 
 feat_table <-gt(data=features_fq)
 
 feat_table %>%
@@ -154,7 +159,7 @@ feat_table %>%
     X50. = "50%",
     X75. = "75%"
   )  %>%
-  gtsave("features_quimicas_description.pdf")
+  gtsave("features_quimicas_description.png")
 
 features_fq_by_type <- read.csv(file = '../../data/metadata/type_var_fq_bins.csv')
 
