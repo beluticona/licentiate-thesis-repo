@@ -31,5 +31,5 @@ We proposed an alternative evaluation method, based on a bidimensional represent
 of two complementary metrics, which makes it easier to distinguish model performance.
 Finally, we applied this method to study ensamble models for small datasets, concluding
 that the combination of specialized models in different classes produces high-performance
-models. _This thesis suggest chemistry community in ML focusing more on model reliability 
-than improving performance of traditional metrics in future research. _
+models. This thesis suggest chemistry community in ML focusing more on model reliability 
+than improving performance of traditional metrics in future research.
